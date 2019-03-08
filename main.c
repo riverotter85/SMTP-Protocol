@@ -1,8 +1,11 @@
+#include <sys/types.h>
 #include <sys/socket.h>
+#include <unistd.h>
 #include <netinet/in.h>
 #include <netdb.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 //const char* get_ip_from_domain(const char* domain_name) {
 //    const char* domain_ip;
@@ -50,14 +53,14 @@ int main()
     host_addr.sin_addr = *(struct in_addr *) host_info->h_addr; // NOTE: May need to change!
 
     // Connect socket to host
-    if (!connect(socket_fd, &host_addr, sizeof(host_addr)))
+    if (!connect(socket_fd, (struct sockaddr *) &host_addr, sizeof(host_addr)))
     {
         perror("Socket failed to connect to host.");
         return 1;
     }
 
     printf("Enter a message to send: ");
-    memset(&buffer, 0, 256) // Keep an eye on this e_e
+    memset(&buffer, 0, 256); // Keep an eye on this e_e
     fgets(buffer, 255, stdin);
     if (!write(socket_fd, buffer, strlen(buffer)))
     {
