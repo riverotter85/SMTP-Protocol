@@ -44,7 +44,7 @@ int main()
     memset(&host_addr, 0, sizeof(struct sockaddr_in)); // Clear my_addr struct
     host_addr.sin_family = AF_INET;
     host_addr.sin_port = htons(25); // SMTP port
-    host_info = gethostbyname("*** Host Name ***");
+    host_info = gethostbyname("localhost");
     if (!host_info)
     {
         perror("Failed to obtain host info.");
@@ -75,6 +75,7 @@ int main()
         perror("Error reading from socket.");
         return 1;
     }
+    printf("READ: %s\n", buffer);
 
     //// Bind address to socket
     //if (!bind(socket_fd, (struct sockaddr *) &my_addr, sizeof(my_addr)))
