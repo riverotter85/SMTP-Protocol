@@ -44,7 +44,7 @@ int main()
     memset(&host_addr, 0, sizeof(struct sockaddr_in)); // Clear my_addr struct
     host_addr.sin_family = AF_INET;
     host_addr.sin_port = htons(25); // SMTP port
-    host_info = gethostbyname("smtp.gmail.com");
+    host_info = gethostbyname("Mail.csc.tntech.edu");
     if (!host_info)
     {
         perror("Failed to obtain host info.");
@@ -53,7 +53,7 @@ int main()
     host_addr.sin_addr = *(struct in_addr *) host_info->h_addr; // NOTE: May need to change!
 
     // Connect socket to host
-    if (!connect(socket_fd, (struct sockaddr *) &host_addr, sizeof(host_addr)))
+    if (connect(socket_fd, (struct sockaddr *) &host_addr, sizeof(host_addr)) < 0)
     {
         perror("Socket failed to connect to host.");
         return 1;
@@ -65,14 +65,12 @@ int main()
         perror("Error reading from socket.");
         return 1;
     }
-    printf("%s\n", buffer);
 
     printf("Enter a message to send: ");
     bzero(&buffer, 256); // Keep an eye on this e_e
     fgets(buffer, 255, stdin);
     if (!write(socket_fd, buffer, strlen(buffer))) //!!!
     {
-        printf("Hola!!!\n");
         perror("Error writing to socket.");
         return 1;
     }
