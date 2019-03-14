@@ -7,6 +7,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define BUFF_LEN 256
+
 void exit_error(const char *msg)
 {
     perror(msg);
@@ -35,6 +37,14 @@ struct hostent *get_host_info(const char* host_name)
     return hi;
 }
 
+void connect_socket(int sfd, struct sockaddr_in *addr, size_t size)
+{
+    if (connect(sfd, (struct sockaddr *) addr, size) < 0)
+    {
+        exit_error("Socket failed to connect to host.");
+    }
+}
+
 void setup_host_address(struct sockaddr_in *addr, const char *host_name)
 {
     bzero(addr, sizeof(struct sockaddr_in)); // Clear my_addr struct
@@ -61,72 +71,45 @@ void write_msg(int sfd, const char *buff, size_t len)
     }
 }
 
+void prepare_msg(int sfd, const char* msg)
+{
+    char buff[BUFF_LEN];
+
+    bzero(&buff, BUFF_LEN);
+    read_msg(sfd, buff, BUFF_LEN-1);
+    printf("S: %s", buff);
+
+    bzero(&buff, BUFF_LEN);
+    write_msg(sfd, msg, strlen(msg));
+}
+
 int main()
 {
     int socket_fd;
     struct sockaddr_in host_addr;
 
-    socklen_t host_addr_size;
+    char buffer[BUFF_LEN];
 
-    char buffer[256];
-
-    // Create socket; returns 0 for success, -1 for failure
+    // Create socket and setup connection to "Mail.csc.tntech.edu"
     socket_fd = create_socket();
-
     setup_host_address(&host_addr, "Mail.csc.tntech.edu");
+    connect_socket(socket_fd, &host_addr, sizeof(host_addr));
 
-    // Connect socket to host
-    if (connect(socket_fd, (struct sockaddr *) &host_addr, sizeof(host_addr)) < 0)
-    {
-        exit_error("Socket failed to connect to host.");
-    }
-
-    read_msg(socket_fd, buffer, 255);
-
-    //printf("Enter a message to send: ");
-    //bzero(&buffer, 256); // Keep an eye on this e_e
-    //fgets(buffer, 255, stdin);
-    //write_msg(socket_fd, buffer, strlen(buffer));
-    //printf("WRITE: %s", buffer);
-
-    while (strcmp(buffer, "exit\n") != 0)
-    {
-        bzero(&buffer, 256);
-        read_msg(socket_fd, buffer, 255);
-        printf("READ: %s", buffer);
-
-        printf("Enter a message to send: ");
-        bzero(&buffer, 256); // Keep an eye on this e_e
-        fgets(buffer, 255, stdin);
-        write_msg(socket_fd, buffer, strlen(buffer));
-        printf("WRITE: %s", buffer);
-    }
-
-    return 0;
-
-    //// Bind address to socket
-    //if (!bind(socket_fd, (struct sockaddr *) &my_addr, sizeof(my_addr)))
+    //while (strcmp(buffer, "exit\n") != 0)
     //{
-    //    perror("Failed to bind socket to address.");
-    //    return 1;
+    //    bzero(&buffer, 256);
+    //    read_msg(socket_fd, buffer, 255);
+    //    printf("READ: %s", buffer);
+    //
+    //    printf("Enter a message to send: ");
+    //    bzero(&buffer, 256); // Keep an eye on this e_e
+    //    fgets(buffer, 255, stdin);
+    //    write_msg(socket_fd, buffer, strlen(buffer));
+    //    printf("WRITE: %s", buffer);
     //}
-
-    //// Listen for request from server
-    //if (!listen(socket_fd, LISTEN_BACKLOG))
-    //{
-    //    perror("Socket failed to listen to host.");
-    //    return 1;
-    //}
-
-    //// Accept
-    //host_addr_size = sizeof(struct sockaddr_in);
-    //if (!accept(socket_fd, (struct sockaddr *) &host_addr, &host_addr_size))
-    //{
-    //    perror("Failed to accept response from host.");
-    //    return 1;
-    //}
-
-    // Write reply to socket
 
     // Close socket
+    close(socket_fd);
+    
+    exit(0);
 }
