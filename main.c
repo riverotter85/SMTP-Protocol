@@ -7,21 +7,59 @@
 #include <stdlib.h>
 #include <string.h>
 
-//const char* get_ip_from_domain(const char* domain_name) {
-//    const char* domain_ip;
-//    struct in_addr
-//}
+void exit_error(const char *msg)
+{
+    perror(msg);
+    exit(1);
+}
 
-//int connect_to_server(const char* server_name) {
-//    int socket_fd = socket(AF_INET, SOCK_STREAM, IPPROTO_IP);
-//    struct sockaddr_in addr;
-//
-//    memset(&addr, 0, sizeof(addr));
-//    addr.sin_family = AF_INET;
-//    addr.sin_port = htons(25); // SMTP port
-//
-//    if ()
-//}
+int create_socket()
+{
+    int sfd = socket(AF_INET, SOCK_STREAM, IPPROTO_IP);
+    if (!sfd)
+    {
+        exit_error("Failed to create socket.");
+    }
+
+    return sfd;
+}
+
+struct hostent *get_host_info(const char* host_name)
+{
+    struct hostent *hi = gethostbyname(host_name);
+    if (!hi)
+    {
+        exit_error("Failed to obtain host info.");
+    }
+
+    return hi;
+}
+
+void setup_host_address(struct sockaddr_in *addr, const char *host_name)
+{
+    bzero(addr, sizeof(struct sockaddr_in)); // Clear my_addr struct
+    addr->sin_family = AF_INET;
+    addr->sin_port = htons(25); // SMTP port
+    
+    struct hostent *host_info = get_host_info(host_name);
+    addr->sin_addr = *(struct in_addr *) host_info->h_addr;
+}
+
+void read_msg(int sfd, char *buff, size_t len)
+{
+    if (!read(sfd, buff, len))
+    {
+        exit_error("Error reading from socket.");
+    }
+}
+
+void write_msg(int sfd, const char *buff, size_t len)
+{
+    if (!write(sfd, buff, len))
+    {
+        exit_error("Error writing to socket.");
+    }
+}
 
 int main()
 {
@@ -34,55 +72,36 @@ int main()
     char buffer[256];
 
     // Create socket; returns 0 for success, -1 for failure
-    socket_fd = socket(AF_INET, SOCK_STREAM, IPPROTO_IP);
-    if (!socket_fd)
-    {
-        perror("Failed to create socket.");
-        return 1;
-    }
+    socket_fd = create_socket();
 
-    memset(&host_addr, 0, sizeof(struct sockaddr_in)); // Clear my_addr struct
-    host_addr.sin_family = AF_INET;
-    host_addr.sin_port = htons(25); // SMTP port
-    host_info = gethostbyname("Mail.csc.tntech.edu");
-    if (!host_info)
-    {
-        perror("Failed to obtain host info.");
-        return 1;
-    }
-    host_addr.sin_addr = *(struct in_addr *) host_info->h_addr; // NOTE: May need to change!
+    setup_host_address(&host_addr, "Mail.csc.tntech.edu");
 
     // Connect socket to host
     if (connect(socket_fd, (struct sockaddr *) &host_addr, sizeof(host_addr)) < 0)
     {
-        perror("Socket failed to connect to host.");
-        return 1;
+        exit_error("Socket failed to connect to host.");
     }
 
-    // NOTE: Possibly remove this
-    if (!read(socket_fd, buffer, 255))
-    {
-        perror("Error reading from socket.");
-        return 1;
-    }
+    read_msg(socket_fd, buffer, 255);
 
-    printf("Enter a message to send: ");
-    bzero(&buffer, 256); // Keep an eye on this e_e
-    fgets(buffer, 255, stdin);
-    if (!write(socket_fd, buffer, strlen(buffer))) //!!!
-    {
-        perror("Error writing to socket.");
-        return 1;
-    }
-    printf("WRITE: %s\n", buffer);
+    //printf("Enter a message to send: ");
+    //bzero(&buffer, 256); // Keep an eye on this e_e
+    //fgets(buffer, 255, stdin);
+    //write_msg(socket_fd, buffer, strlen(buffer));
+    //printf("WRITE: %s", buffer);
 
-    bzero(&buffer, 256);
-    if (!read(socket_fd, buffer, 255))
+    while (strcmp(buffer, "exit\n") != 0)
     {
-        perror("Error reading from socket.");
-        return 1;
+        bzero(&buffer, 256);
+        read_msg(socket_fd, buffer, 255);
+        printf("READ: %s", buffer);
+
+        printf("Enter a message to send: ");
+        bzero(&buffer, 256); // Keep an eye on this e_e
+        fgets(buffer, 255, stdin);
+        write_msg(socket_fd, buffer, strlen(buffer));
+        printf("WRITE: %s", buffer);
     }
-    printf("READ: %s\n", buffer);
 
     return 0;
 
