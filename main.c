@@ -71,16 +71,14 @@ void write_msg(int sfd, const char *buff, size_t len)
     }
 }
 
-void prepare_msg(int sfd, const char* msg)
+void prepare_msg(int sfd, char* buff)
 {
-    char buff[BUFF_LEN];
+    write_msg(sfd, buff, strlen(buff));
+    printf("C: %s", buff);
 
-    bzero(&buff, BUFF_LEN);
+    bzero(buff, BUFF_LEN);
     read_msg(sfd, buff, BUFF_LEN-1);
     printf("S: %s", buff);
-
-    bzero(&buff, BUFF_LEN);
-    write_msg(sfd, msg, strlen(msg));
 }
 
 int main()
@@ -95,18 +93,37 @@ int main()
     setup_host_address(&host_addr, "Mail.csc.tntech.edu");
     connect_socket(socket_fd, &host_addr, sizeof(host_addr));
 
-    //while (strcmp(buffer, "exit\n") != 0)
-    //{
-    //    bzero(&buffer, 256);
-    //    read_msg(socket_fd, buffer, 255);
-    //    printf("READ: %s", buffer);
-    //
-    //    printf("Enter a message to send: ");
-    //    bzero(&buffer, 256); // Keep an eye on this e_e
-    //    fgets(buffer, 255, stdin);
-    //    write_msg(socket_fd, buffer, strlen(buffer));
-    //    printf("WRITE: %s", buffer);
-    //}
+    // Initial read to server
+    bzero(&buffer, BUFF_LEN);
+    read_msg(socket_fd, buffer, BUFF_LEN-1);
+    printf("S: %s", buffer);
+
+    // HELO message
+    bzero(&buffer, BUFF_LEN);
+    strcpy(buffer, "HELO ");
+    strcat(buffer, "ltdavis42\n"); // NOTE: Command MUST have \n character; Replace with argument/input e.e
+    prepare_msg(socket_fd, buffer);
+
+    // MAIL FROM: message
+    bzero(&buffer, BUFF_LEN);
+    strcpy(buffer, "MAIL FROM: <");
+    strcat(buffer, "ltdavis42");
+    strcat(buffer, ">\n");
+    prepare_msg(socket_fd, buffer);
+
+    // RCPT TO: message
+    bzero(&buffer, BUFF_LEN);
+    strcpy(buffer, "RCPT TO: <");
+    strcat(buffer, "ltdavis42");
+    strcat(buffer, ">\n");
+    prepare_msg(socket_fd, buffer);
+
+    // DATA message
+    bzero(&buffer, BUFF_LEN);
+    strcpy(buffer, "DATA\n");
+    prepare_msg(socket_fd, buffer);
+
+    // Data body
 
     // Close socket
     close(socket_fd);
