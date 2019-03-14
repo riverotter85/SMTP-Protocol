@@ -65,7 +65,6 @@ int main()
 {
     int socket_fd;
     struct sockaddr_in host_addr;
-    struct hostent *host_info;
 
     socklen_t host_addr_size;
 
