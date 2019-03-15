@@ -1,3 +1,14 @@
+/****************************************************************************************
+ * Program Name: smtp_client
+ * Author: Logan Davis (assisted by Eric Cabarlo)
+ * Last Modified: 03/15/2019
+ * Command/Use: ./smtp_client <server address/url> <sender email> <recipient email>
+ * Description: smtp_client is a simple little program that connects to an email server
+ *      given by the user and sends an email from the given sender to the given
+ *      recipient using the HELO, MAIL FROM, RCPT TO, DATA, and QUIT commands, as
+ *      specified in the assignment doc.
+ ****************************************************************************************/
+
 #include <unistd.h>
 #include <netdb.h>
 #include <stdio.h>
@@ -96,7 +107,7 @@ void prepare_initial_read(int sfd)
     printf("S: %s", buff);
 }
 
-void prepare_HELO(int sfd, char *client_id)
+void prepare_HELO(int sfd, const char *client_id)
 {
     char buff[BUFF_LEN];
 
@@ -107,7 +118,7 @@ void prepare_HELO(int sfd, char *client_id)
     prepare_msg(sfd, buff);
 }
 
-void prepare_MAIL_FROM(int sfd, char *client_id)
+void prepare_MAIL_FROM(int sfd, const char *client_id)
 {
     char buff[BUFF_LEN];
 
@@ -118,7 +129,7 @@ void prepare_MAIL_FROM(int sfd, char *client_id)
     prepare_msg(sfd, buff);
 }
 
-void prepare_RCPT_TO(int sfd, char *server_id)
+void prepare_RCPT_TO(int sfd, const char *server_id)
 {
     char buff[BUFF_LEN];
 
@@ -180,14 +191,14 @@ void prepare_QUIT(int sfd)
 int main(int argc, char *argv[])
 {
     int socket_fd;
-    struct sockaddr_in host_addr;
+    struct sockaddr_in server_addr;
 
     verify_num_args(argc);
 
     // Create socket and setup connection
     socket_fd = create_socket();
-    setup_host_address(&host_addr, argv[1]);
-    connect_socket(socket_fd, &host_addr, sizeof(host_addr));
+    setup_host_address(&server_addr, argv[1]);
+    connect_socket(socket_fd, &server_addr, sizeof(server_addr));
 
     // Run SMTP commands with args given
     prepare_initial_read(socket_fd);
