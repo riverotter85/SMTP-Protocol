@@ -8,6 +8,7 @@
 #include <string.h>
 
 #define BUFF_LEN 256
+#define SMTP_PORT 25
 
 void exit_error(const char *msg)
 {
@@ -49,7 +50,7 @@ void setup_host_address(struct sockaddr_in *addr, const char *host_name)
 {
     bzero(addr, sizeof(struct sockaddr_in)); // Clear my_addr struct
     addr->sin_family = AF_INET;
-    addr->sin_port = htons(25); // SMTP port
+    addr->sin_port = htons(SMTP_PORT);
     
     struct hostent *host_info = get_host_info(host_name);
     addr->sin_addr = *(struct in_addr *) host_info->h_addr;
@@ -124,9 +125,24 @@ int main()
     prepare_msg(socket_fd, buffer);
 
     // Data body
+    while (strcmp(buffer, ".\n"))
+    {
+        bzero(&buffer, BUFF_LEN);
+        printf("C: ");
+        fgets(buffer, BUFF_LEN, stdin);
+        write_msg(socket_fd, buffer, strlen(buffer));
+    }
+    bzero(&buffer, BUFF_LEN);
+    read_msg(socket_fd, buffer, BUFF_LEN-1);
+    printf("S: %s", buffer);
+
+    // QUIT message
+    bzero(&buffer, BUFF_LEN);
+    strcpy(buffer, "QUIT\n");
+    prepare_msg(socket_fd, buffer);
 
     // Close socket
     close(socket_fd);
-    
+ 
     exit(0);
 }
