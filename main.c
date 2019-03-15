@@ -1,7 +1,4 @@
-#include <sys/types.h>
-#include <sys/socket.h>
 #include <unistd.h>
-#include <netinet/in.h>
 #include <netdb.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -56,7 +53,7 @@ void connect_socket(int sfd, struct sockaddr_in *addr, size_t size)
 
 void setup_host_address(struct sockaddr_in *addr, const char *host_name)
 {
-    bzero(addr, sizeof(struct sockaddr_in)); // Clear my_addr struct
+    bzero(addr, sizeof(struct sockaddr_in));
     addr->sin_family = AF_INET;
     addr->sin_port = htons(SMTP_PORT);
     
@@ -106,7 +103,7 @@ void prepare_HELO(int sfd, char *client_id)
     bzero(&buff, BUFF_LEN);
     strcpy(buff, "HELO ");
     strcat(buff, client_id);
-    strcat(buff, "\n"); // NOTE: Command MUST have \n character; Replace with argument/input e.e
+    strcat(buff, "\n");
     prepare_msg(sfd, buff);
 }
 
@@ -141,11 +138,18 @@ void prepare_data_request(int sfd)
     prepare_msg(sfd, buff);
 }
 
+int equal_to_END_MESSAGE(const char *expr)
+{
+    return strcmp(expr, ".\n") == 0;
+}
+
 void prepare_data_body(int sfd)
 {
     char buff[BUFF_LEN];
 
-    while (strcmp(buff, ".\n"))
+    bzero(&buff, BUFF_LEN);
+
+    while (!equal_to_END_MESSAGE(buff))
     {
         bzero(buff, BUFF_LEN);
         printf("C: ");
