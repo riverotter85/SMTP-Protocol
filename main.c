@@ -16,6 +16,14 @@ void exit_error(const char *msg)
     exit(1);
 }
 
+void verify_num_args(int num_args)
+{
+    if (num_args < 4)
+    {
+        exit_error("Insufficient number of arguments.");
+    }
+}
+
 int create_socket()
 {
     int sfd = socket(AF_INET, SOCK_STREAM, IPPROTO_IP);
@@ -82,64 +90,108 @@ void prepare_msg(int sfd, char* buff)
     printf("S: %s", buff);
 }
 
-int main()
+void prepare_initial_read(int sfd)
+{
+    char buff[BUFF_LEN];
+
+    bzero(&buff, BUFF_LEN);
+    read_msg(sfd, buff, BUFF_LEN-1);
+    printf("S: %s", buff);
+}
+
+void prepare_HELO(int sfd, char *client_id)
+{
+    char buff[BUFF_LEN];
+
+    bzero(&buff, BUFF_LEN);
+    strcpy(buff, "HELO ");
+    strcat(buff, client_id);
+    strcat(buff, "\n"); // NOTE: Command MUST have \n character; Replace with argument/input e.e
+    prepare_msg(sfd, buff);
+}
+
+void prepare_MAIL_FROM(int sfd, char *client_id)
+{
+    char buff[BUFF_LEN];
+
+    bzero(&buff, BUFF_LEN);
+    strcpy(buff, "MAIL FROM: <");
+    strcat(buff, client_id);
+    strcat(buff, ">\n");
+    prepare_msg(sfd, buff);
+}
+
+void prepare_RCPT_TO(int sfd, char *server_id)
+{
+    char buff[BUFF_LEN];
+
+    bzero(&buff, BUFF_LEN);
+    strcpy(buff, "RCPT TO: <");
+    strcat(buff, server_id);
+    strcat(buff, ">\n");
+    prepare_msg(sfd, buff);
+}
+
+void prepare_data_request(int sfd)
+{
+    char buff[BUFF_LEN];
+
+    bzero(&buff, BUFF_LEN);
+    strcpy(buff, "DATA\n");
+    prepare_msg(sfd, buff);
+}
+
+void prepare_data_body(int sfd)
+{
+    char buff[BUFF_LEN];
+
+    while (strcmp(buff, ".\n"))
+    {
+        bzero(buff, BUFF_LEN);
+        printf("C: ");
+        fgets(buff, BUFF_LEN, stdin);
+        write_msg(sfd, buff, strlen(buff));
+    }
+
+    bzero(buff, BUFF_LEN);
+    read_msg(sfd, buff, BUFF_LEN-1);
+    printf("S: %s", buff);
+}
+
+void prepare_DATA(int sfd)
+{
+    prepare_data_request(sfd);
+    prepare_data_body(sfd);
+}
+
+void prepare_QUIT(int sfd)
+{
+    char buff[BUFF_LEN];
+
+    bzero(&buff, BUFF_LEN);
+    strcpy(buff, "QUIT\n");
+    prepare_msg(sfd, buff);
+}
+
+int main(int argc, char *argv[])
 {
     int socket_fd;
     struct sockaddr_in host_addr;
 
-    char buffer[BUFF_LEN];
+    verify_num_args(argc);
 
-    // Create socket and setup connection to "Mail.csc.tntech.edu"
+    // Create socket and setup connection
     socket_fd = create_socket();
-    setup_host_address(&host_addr, "Mail.csc.tntech.edu");
+    setup_host_address(&host_addr, argv[1]);
     connect_socket(socket_fd, &host_addr, sizeof(host_addr));
 
-    // Initial read to server
-    bzero(&buffer, BUFF_LEN);
-    read_msg(socket_fd, buffer, BUFF_LEN-1);
-    printf("S: %s", buffer);
-
-    // HELO message
-    bzero(&buffer, BUFF_LEN);
-    strcpy(buffer, "HELO ");
-    strcat(buffer, "ltdavis42\n"); // NOTE: Command MUST have \n character; Replace with argument/input e.e
-    prepare_msg(socket_fd, buffer);
-
-    // MAIL FROM: message
-    bzero(&buffer, BUFF_LEN);
-    strcpy(buffer, "MAIL FROM: <");
-    strcat(buffer, "ltdavis42");
-    strcat(buffer, ">\n");
-    prepare_msg(socket_fd, buffer);
-
-    // RCPT TO: message
-    bzero(&buffer, BUFF_LEN);
-    strcpy(buffer, "RCPT TO: <");
-    strcat(buffer, "ltdavis42");
-    strcat(buffer, ">\n");
-    prepare_msg(socket_fd, buffer);
-
-    // DATA message
-    bzero(&buffer, BUFF_LEN);
-    strcpy(buffer, "DATA\n");
-    prepare_msg(socket_fd, buffer);
-
-    // Data body
-    while (strcmp(buffer, ".\n"))
-    {
-        bzero(&buffer, BUFF_LEN);
-        printf("C: ");
-        fgets(buffer, BUFF_LEN, stdin);
-        write_msg(socket_fd, buffer, strlen(buffer));
-    }
-    bzero(&buffer, BUFF_LEN);
-    read_msg(socket_fd, buffer, BUFF_LEN-1);
-    printf("S: %s", buffer);
-
-    // QUIT message
-    bzero(&buffer, BUFF_LEN);
-    strcpy(buffer, "QUIT\n");
-    prepare_msg(socket_fd, buffer);
+    // Run SMTP commands with args given
+    prepare_initial_read(socket_fd);
+    prepare_HELO(socket_fd, argv[2]);
+    prepare_MAIL_FROM(socket_fd, argv[2]);
+    prepare_RCPT_TO(socket_fd, argv[3]);
+    prepare_DATA(socket_fd);
+    prepare_QUIT(socket_fd);
 
     // Close socket
     close(socket_fd);
