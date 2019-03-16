@@ -1,6 +1,7 @@
 /****************************************************************************************
  * Program Name: smtp_client
  * Author: Logan Davis (assisted by Eric Cabarlo)
+ * Class (Section): CSC 4200 (001)
  * Last Modified: 03/15/2019
  * Platform/OS: Linux (Ubuntu)
  * Command/Use: ./smtp_client <server address/url> <sender email> <recipient email>
