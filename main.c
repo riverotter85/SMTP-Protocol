@@ -2,11 +2,13 @@
  * Program Name: smtp_client
  * Author: Logan Davis (assisted by Eric Cabarlo)
  * Last Modified: 03/15/2019
+ * Platform/OS: Linux (Ubuntu)
  * Command/Use: ./smtp_client <server address/url> <sender email> <recipient email>
  * Description: smtp_client is a simple little program that connects to an email server
  *      given by the user and sends an email from the given sender to the given
  *      recipient using the HELO, MAIL FROM, RCPT TO, DATA, and QUIT commands, as
- *      specified in the assignment doc.
+ *      specified in the assignment doc. The client can only interact with servers that
+ *      have authentication disabled!!
  ****************************************************************************************/
 
 #include <unistd.h>
@@ -74,7 +76,7 @@ void setup_host_address(struct sockaddr_in *addr, const char *host_name)
 
 void read_msg(int sfd, char *buff, size_t len)
 {
-    if (!read(sfd, buff, len))
+    if (read(sfd, buff, len) < 0)
     {
         exit_error("Error reading from socket.");
     }
@@ -82,7 +84,7 @@ void read_msg(int sfd, char *buff, size_t len)
 
 void write_msg(int sfd, const char *buff, size_t len)
 {
-    if (!write(sfd, buff, len))
+    if (write(sfd, buff, len) < 0)
     {
         exit_error("Error writing to socket.");
     }
